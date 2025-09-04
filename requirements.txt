@@ -1,0 +1,7 @@
+streamlit
+psycopg2-binary
+bcrypt
+opencv-python
+face-recognition
+numpy
+pillow
