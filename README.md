@@ -1,18 +1,14 @@
-# 🖥️ CBT System with Biometric Verification (Python + Streamlit)
-
-Minimal but complete CBT prototype with biometric login, admin exam management, and student exam taking.
+# CBT System with Biometric Verification
 
 ## Setup
-1) Python env & install:
-```
-pip install -r requirements.txt
-```
-2) PostgreSQL:
-```
-createdb cbt_system
-psql -d cbt_system -f schema.sql
-```
-3) Run app:
-```
-streamlit run app.py
-```
+1. Create PostgreSQL DB:
+   createdb cbt_system
+
+2. Apply schema:
+   psql -U postgres -d cbt_system -f schema.sql
+
+3. Install requirements:
+   pip install -r requirements.txt
+
+4. Run app:
+   streamlit run app.py

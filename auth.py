@@ -1,32 +1,35 @@
-# auth.py — Password & Biometric helpers
-import bcrypt
-import numpy as np
-from PIL import Image
-import io
-import face_recognition
-import streamlit as st
+import psycopg2, psycopg2.extras, hashlib
+from db import get_connection
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
-def verify_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+def register_user(first, last, email, password, role):
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO users (first_name, last_name, email, password_hash, role, biometric_template)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, 
+            (first, last, email, hash_password(password), role, b'FAKE_BIOMETRIC')
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print("Error registering user:", e)
+        return False
+    finally:
+        cur.close()
+        conn.close()
 
-def capture_face_streamlit(label: str):
-    img_file = st.camera_input(label)
-    if img_file is None:
-        return None
-    bytes_data = img_file.getvalue()
-    pil_img = Image.open(io.BytesIO(bytes_data)).convert("RGB")
-    return np.array(pil_img)
-
-def encode_face(rgb_image_ndarray: np.ndarray):
-    encs = face_recognition.face_encodings(rgb_image_ndarray)
-    if encs:
-        return encs[0]
-    return None
-
-def verify_biometric(live_encoding: np.ndarray, stored_encoding_bytes: bytes) -> bool:
-    stored = np.frombuffer(stored_encoding_bytes, dtype=np.float64)
-    matches = face_recognition.compare_faces([stored], live_encoding)
-    return bool(matches[0])
+def login_user(email, password):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("SELECT * FROM users WHERE email=%s AND password_hash=%s",
+                (email, hash_password(password)))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return user
