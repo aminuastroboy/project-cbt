@@ -1,3 +1,0 @@
-streamlit
-face_recognition
-pillow
