@@ -1,15 +1,13 @@
-# Lightweight CBT System with Exams (No DB)
+# CBT System with Biometric Verification
 
-This version runs without PostgreSQL, using in-memory storage.
+This version integrates **face recognition** for biometric login.
 
 ## Features
-- Admin: create exams and questions
-- Student: take exams and see score
-- Invigilator: monitor (placeholder)
+- Register with face image (biometric encoding stored in memory)
+- Login requires email, password, and face match
+- Role-based dashboards (Admin, Student, Invigilator)
 
 ## Setup
-1. Install dependencies:
-   pip install -r requirements.txt
-
-2. Run app:
-   streamlit run app.py
+1. Install system dependencies (Linux example):
+   ```bash
+   sudo apt-get update && sudo apt-get install -y cmake g++ libboost-all-dev
