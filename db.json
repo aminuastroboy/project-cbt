@@ -1,0 +1,17 @@
+{
+  "users": {
+    "test@example.com": {
+      "name": "Test User",
+      "face_encoding": [
+        0.1,
+        0.2,
+        0.3
+      ]
+    }
+  },
+  "results": {
+    "test@example.com": {
+      "score": 1
+    }
+  }
+}
