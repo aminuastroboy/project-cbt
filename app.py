@@ -14,13 +14,25 @@ def safe_init_db():
         return False
 
 st.title("📝 CBT System with Face Recognition")
-
 db_ready = safe_init_db()
 
-menu = ["Register", "Login"]
+# ----------------------------
+# Sidebar menu based on login state
+# ----------------------------
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+if st.session_state["logged_in"]:
+    menu = ["Dashboard", "Logout"]
+else:
+    menu = ["Register", "Login"]
+
 choice = st.sidebar.selectbox("Menu", menu)
 
-if choice == "Register":
+# ----------------------------
+# Register Page
+# ----------------------------
+if choice == "Register" and not st.session_state["logged_in"]:
     st.subheader("Create New Account")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -53,7 +65,10 @@ if choice == "Register":
         else:
             st.warning("Please fill in all fields.")
 
-elif choice == "Login":
+# ----------------------------
+# Login Page
+# ----------------------------
+elif choice == "Login" and not st.session_state["logged_in"]:
     st.subheader("Login to Your Account")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -80,10 +95,12 @@ elif choice == "Login":
                                 st.success("✅ Login successful with face recognition!")
                                 st.session_state["logged_in"] = True
                                 st.session_state["username"] = username
+                                st.experimental_rerun()
                         else:
                             st.success("✅ Login successful (no face check).")
                             st.session_state["logged_in"] = True
                             st.session_state["username"] = username
+                            st.experimental_rerun()
                     else:
                         st.error("Invalid password.")
                 else:
@@ -92,12 +109,11 @@ elif choice == "Login":
                 st.error(f"Error during login: {e}")
 
 # ----------------------------
-# Dashboard after login
+# Dashboard
 # ----------------------------
-if "logged_in" in st.session_state and st.session_state["logged_in"]:
+elif choice == "Dashboard" and st.session_state["logged_in"]:
     st.header(f"👋 Welcome, {st.session_state['username']}!")
     st.write("This is your CBT dashboard.")
-    st.write("👉 Here you can take practice tests, review results, etc.")
 
     st.subheader("📝 Sample Quiz")
     q1 = st.radio("1. What is 2 + 2?", ["3", "4", "5"], index=None)
@@ -111,6 +127,10 @@ if "logged_in" in st.session_state and st.session_state["logged_in"]:
             score += 1
         st.success(f"🎉 You scored {score}/2")
 
-    if st.button("Logout"):
-        st.session_state.clear()
-        st.experimental_rerun()
+# ----------------------------
+# Logout
+# ----------------------------
+elif choice == "Logout" and st.session_state["logged_in"]:
+    st.session_state.clear()
+    st.experimental_rerun()
+                
