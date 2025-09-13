@@ -2,124 +2,89 @@ import sys, os
 sys.path.append(os.path.dirname(__file__))
 
 import streamlit as st
+from db import init_db, get_conn
+from auth import hash_password, verify_password, encode_face, verify_face
 
-try:
-    from auth import hash_password, verify_password, encode_face, verify_face
-except Exception as e:
-    st.error(f"Auth import failed: {e}")
+def safe_init_db():
+    try:
+        init_db()
+        return True
+    except Exception as e:
+        st.warning(f"⚠️ Database connection failed: {e}")
+        return False
 
-from db import init_db, get_user_by_username, add_user, add_exam, add_question, get_exams, get_questions, save_result
+st.title("📝 CBT System with Face Recognition")
 
-st.set_page_config(page_title="CBT System", layout="wide")
+db_ready = safe_init_db()
 
-# Initialize database
-init_db()
+menu = ["Register", "Login"]
+choice = st.sidebar.selectbox("Menu", menu)
 
-# Session state
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-def login():
-    st.subheader("Login")
+if choice == "Register":
+    st.subheader("Create New Account")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    camera = st.camera_input("Biometric Login")
-    
-    if st.button("Login"):
-        user = get_user_by_username(username)
-        if user and verify_password(password, user[2]):
-            if camera:
-                if verify_face(camera, user[4]):
-                    st.session_state.user = user
-                    st.success("Login successful with biometrics")
-                else:
-                    st.error("Biometric verification failed")
-            else:
-                st.session_state.user = user
-                st.success("Login successful")
-        else:
-            st.error("Invalid username or password")
+    face_image = st.file_uploader("Upload a face image", type=["jpg", "png", "jpeg"])
 
-def register():
-    st.subheader("Register")
-    username = st.text_input("Choose Username")
-    password = st.text_input("Choose Password", type="password")
-    role = st.selectbox("Role", ["student", "examiner", "admin"])
-    camera = st.camera_input("Capture Face for Biometric Login")
-    
     if st.button("Register"):
-        if camera:
-            face_encoding = encode_face(camera)
-            add_user(username, hash_password(password), role, face_encoding)
-            st.success("User registered successfully")
+        if not db_ready:
+            st.error("Database not available. Please try again later.")
+        elif username and password:
+            try:
+                conn = get_conn()
+                cur = conn.cursor()
+                query = "SELECT * FROM users WHERE username=%s" if hasattr(cur, "mogrify") else "SELECT * FROM users WHERE username=?"
+                cur.execute(query, (username,))
+                if cur.fetchone():
+                    st.error("Username already exists.")
+                else:
+                    pw_hash = hash_password(password)
+                    embedding = None
+                    if face_image:
+                        embedding = encode_face(face_image)
+                    query = "INSERT INTO users (username, password_hash, face_embedding) VALUES (%s, %s, %s)" if hasattr(cur, "mogrify") else "INSERT INTO users (username, password_hash, face_embedding) VALUES (?, ?, ?)"
+                    cur.execute(query, (username, pw_hash, embedding))
+                    conn.commit()
+                    st.success("Account created successfully!")
+                cur.close()
+                conn.close()
+            except Exception as e:
+                st.error(f"Error during registration: {e}")
         else:
-            st.warning("Please capture your face")
+            st.warning("Please fill in all fields.")
 
-def student_dashboard(user):
-    st.title(f"Welcome {user[1]} (Student)")
-    exams = get_exams()
-    if not exams:
-        st.info("No exams available")
-        return
-    exam = st.selectbox("Choose Exam", [e[1] for e in exams])
-    if exam:
-        chosen_exam = [e for e in exams if e[1] == exam][0]
-        questions = get_questions(chosen_exam[0])
-        score = 0
-        for q in questions:
-            st.write(q[2])
-            answer = st.radio("Choose answer", [q[3], q[4], q[5], q[6]], key=q[0])
-            if answer == q[7]:
-                score += 1
-        if st.button("Submit Exam"):
-            save_result(user[0], chosen_exam[0], score)
-            st.success(f"Exam submitted. Score: {score}/{len(questions)}")
+elif choice == "Login":
+    st.subheader("Login to Your Account")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    face_image = st.file_uploader("Upload your face image", type=["jpg", "png", "jpeg"])
 
-def examiner_dashboard(user):
-    st.title(f"Welcome {user[1]} (Examiner)")
-    exam_name = st.text_input("Exam Name")
-    if st.button("Create Exam"):
-        add_exam(exam_name, user[0])
-        st.success("Exam created")
-    
-    exams = get_exams()
-    if exams:
-        exam = st.selectbox("Choose Exam to Add Questions", [e[1] for e in exams])
-        if exam:
-            chosen_exam = [e for e in exams if e[1] == exam][0]
-            question = st.text_area("Question")
-            opt_a = st.text_input("Option A")
-            opt_b = st.text_input("Option B")
-            opt_c = st.text_input("Option C")
-            opt_d = st.text_input("Option D")
-            correct = st.selectbox("Correct Answer", [opt_a, opt_b, opt_c, opt_d])
-            if st.button("Add Question"):
-                add_question(chosen_exam[0], question, opt_a, opt_b, opt_c, opt_d, correct)
-                st.success("Question added")
-
-def admin_dashboard(user):
-    st.title(f"Welcome {user[1]} (Admin)")
-    st.write("Admin dashboard features can be added here")
-
-def main():
-    st.sidebar.title("CBT Navigation")
-    choice = st.sidebar.radio("Go to", ["Login", "Register", "Dashboard"])
-
-    if choice == "Login":
-        login()
-    elif choice == "Register":
-        register()
-    elif choice == "Dashboard":
-        if st.session_state.user:
-            user = st.session_state.user
-            if user[3] == "student":
-                student_dashboard(user)
-            elif user[3] == "examiner":
-                examiner_dashboard(user)
-            elif user[3] == "admin":
-                admin_dashboard(user)
+    if st.button("Login"):
+        if not db_ready:
+            st.error("Database not available. Please try again later.")
         else:
-            st.warning("Please log in first")
+            try:
+                conn = get_conn()
+                cur = conn.cursor()
+                query = "SELECT password_hash, face_embedding FROM users WHERE username=%s" if hasattr(cur, "mogrify") else "SELECT password_hash, face_embedding FROM users WHERE username=?"
+                cur.execute(query, (username,))
+                user = cur.fetchone()
+                cur.close()
+                conn.close()
 
-if __name__ == "__main__":
-    main()
+                if user:
+                    pw_hash, stored_embedding = user[0], user[1]
+                    if verify_password(password, pw_hash):
+                        if stored_embedding and face_image:
+                            if verify_face(face_image, stored_embedding):
+                                st.success("Login successful with face recognition!")
+                            else:
+                                st.error("Face does not match.")
+                        else:
+                            st.success("Login successful (no face check).")
+                    else:
+                        st.error("Invalid password.")
+                else:
+                    st.error("User not found.")
+            except Exception as e:
+                st.error(f"Error during login: {e}")

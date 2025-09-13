@@ -2,7 +2,7 @@ streamlit
 psycopg2-binary
 bcrypt
 deepface
-opencv-python-headless
+opencv-python
 numpy
 Pillow
 tensorflow
