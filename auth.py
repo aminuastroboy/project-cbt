@@ -1,32 +1,46 @@
 import bcrypt
 import numpy as np
-from deepface import DeepFace
 import streamlit as st
-from PIL import Image
-import io
-import base64
 
-def hash_password(password):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+try:
+    from deepface import DeepFace
+    from deepface.commons import functions
+    import cv2
+    DEEPFACE_AVAILABLE = True
+except ImportError:
+    DEEPFACE_AVAILABLE = False
+    st.warning("⚠️ DeepFace is not available. Face recognition disabled.")
 
-def verify_password(password, hashed):
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+# -------------------
+# Password utilities
+# -------------------
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-def encode_face(image_file):
-    image = Image.open(io.BytesIO(image_file.getvalue()))
-    buffered = io.BytesIO()
-    image.save(buffered, format="JPEG")
-    return base64.b64encode(buffered.getvalue()).decode("utf-8")
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
-def verify_face(image_file, stored_face_b64):
-    if not stored_face_b64:
+# -------------------
+# Face utilities
+# -------------------
+def encode_face(file):
+    if not DEEPFACE_AVAILABLE:
+        return None
+    try:
+        img = functions.preprocess_face(img=file, target_size=(224, 224), detector_backend="opencv")
+        embedding = DeepFace.represent(img_path=img, model_name="VGG-Face", enforce_detection=False)[0]["embedding"]
+        return np.array(embedding).tobytes()
+    except Exception as e:
+        st.error(f"Face encoding failed: {e}")
+        return None
+
+def verify_face(file, stored_embedding):
+    if not DEEPFACE_AVAILABLE:
         return False
     try:
-        stored_bytes = base64.b64decode(stored_face_b64)
-        stored_image = Image.open(io.BytesIO(stored_bytes))
-        live_image = Image.open(io.BytesIO(image_file.getvalue()))
-        result = DeepFace.verify(np.array(live_image), np.array(stored_image), enforce_detection=False)
-        return result.get("verified", False)
+        img = functions.preprocess_face(img=file, target_size=(224, 224), detector_backend="opencv")
+        embedding = DeepFace.represent(img_path=img, model_name="VGG-Face", enforce_detection=False)[0]["embedding"]
+        return np.linalg.norm(np.array(embedding) - np.frombuffer(stored_embedding, dtype=np.float64)) < 0.6
     except Exception as e:
-        st.error(f"DeepFace error: {e}")
+        st.error(f"Face verification failed: {e}")
         return False
