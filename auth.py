@@ -10,31 +10,23 @@ except ImportError:
     DEEPFACE_AVAILABLE = False
     st.warning("⚠️ DeepFace is not available. Face recognition disabled.")
 
-# -------------------
-# Password utilities
-# -------------------
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-# -------------------
-# Face utilities
-# -------------------
 def encode_face(file):
     if not DEEPFACE_AVAILABLE:
         return None
     try:
         image = Image.open(file)
         img_array = np.array(image)
-
         embedding = DeepFace.represent(
             img_path=img_array,
             model_name="VGG-Face",
             enforce_detection=False
         )[0]["embedding"]
-
         return np.array(embedding, dtype=np.float64).tobytes()
     except Exception as e:
         st.error(f"Face encoding failed: {e}")
@@ -46,16 +38,15 @@ def verify_face(file, stored_embedding):
     try:
         image = Image.open(file)
         img_array = np.array(image)
-
         embedding = DeepFace.represent(
             img_path=img_array,
             model_name="VGG-Face",
             enforce_detection=False
         )[0]["embedding"]
-
         return np.linalg.norm(
             np.array(embedding) - np.frombuffer(stored_embedding, dtype=np.float64)
         ) < 0.6
     except Exception as e:
         st.error(f"Face verification failed: {e}")
         return False
+        
