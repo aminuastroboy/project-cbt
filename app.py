@@ -24,7 +24,7 @@ if choice == "Register":
     st.subheader("Create New Account")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    face_image = st.file_uploader("Upload a face image", type=["jpg", "png", "jpeg"])
+    face_image = st.camera_input("Take a picture for registration")
 
     if st.button("Register"):
         if not db_ready:
@@ -57,7 +57,7 @@ elif choice == "Login":
     st.subheader("Login to Your Account")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    face_image = st.file_uploader("Upload your face image", type=["jpg", "png", "jpeg"])
+    face_image = st.camera_input("Take a picture to verify your face")
 
     if st.button("Login"):
         if not db_ready:
