@@ -1,7 +1,6 @@
 import streamlit as st
 from db import init_db, get_user_by_username, add_user, add_exam, add_question, get_exams, get_questions, save_result
 from auth import hash_password, verify_password, encode_face, verify_face
-import psycopg2
 
 st.set_page_config(page_title="CBT System", layout="wide")
 
@@ -22,7 +21,7 @@ def login():
         user = get_user_by_username(username)
         if user and verify_password(password, user[2]):
             if camera:
-                if verify_face(camera, user[3]):
+                if verify_face(camera, user[4]):
                     st.session_state.user = user
                     st.success("Login successful with biometrics")
                 else:
@@ -51,6 +50,9 @@ def register():
 def student_dashboard(user):
     st.title(f"Welcome {user[1]} (Student)")
     exams = get_exams()
+    if not exams:
+        st.info("No exams available")
+        return
     exam = st.selectbox("Choose Exam", [e[1] for e in exams])
     if exam:
         chosen_exam = [e for e in exams if e[1] == exam][0]
@@ -73,18 +75,19 @@ def examiner_dashboard(user):
         st.success("Exam created")
     
     exams = get_exams()
-    exam = st.selectbox("Choose Exam to Add Questions", [e[1] for e in exams])
-    if exam:
-        chosen_exam = [e for e in exams if e[1] == exam][0]
-        question = st.text_area("Question")
-        opt_a = st.text_input("Option A")
-        opt_b = st.text_input("Option B")
-        opt_c = st.text_input("Option C")
-        opt_d = st.text_input("Option D")
-        correct = st.selectbox("Correct Answer", [opt_a, opt_b, opt_c, opt_d])
-        if st.button("Add Question"):
-            add_question(chosen_exam[0], question, opt_a, opt_b, opt_c, opt_d, correct)
-            st.success("Question added")
+    if exams:
+        exam = st.selectbox("Choose Exam to Add Questions", [e[1] for e in exams])
+        if exam:
+            chosen_exam = [e for e in exams if e[1] == exam][0]
+            question = st.text_area("Question")
+            opt_a = st.text_input("Option A")
+            opt_b = st.text_input("Option B")
+            opt_c = st.text_input("Option C")
+            opt_d = st.text_input("Option D")
+            correct = st.selectbox("Correct Answer", [opt_a, opt_b, opt_c, opt_d])
+            if st.button("Add Question"):
+                add_question(chosen_exam[0], question, opt_a, opt_b, opt_c, opt_d, correct)
+                st.success("Question added")
 
 def admin_dashboard(user):
     st.title(f"Welcome {user[1]} (Admin)")

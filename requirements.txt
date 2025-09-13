@@ -1,6 +1,7 @@
 streamlit
 psycopg2-binary
 bcrypt
-face_recognition
+deepface
+opencv-python-headless
 numpy
 Pillow

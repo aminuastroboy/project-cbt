@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password TEXT NOT NULL,
     role VARCHAR(20) NOT NULL,
-    face_encoding BYTEA
+    face_encoding TEXT
 );
 
 CREATE TABLE IF NOT EXISTS exams (

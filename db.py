@@ -1,5 +1,4 @@
 import psycopg2
-import psycopg2.extras
 
 DB_NAME = "cbt_system"
 DB_USER = "postgres"

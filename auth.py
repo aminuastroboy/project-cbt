@@ -1,9 +1,10 @@
 import bcrypt
 import numpy as np
-import face_recognition
+from deepface import DeepFace
 import streamlit as st
 from PIL import Image
 import io
+import base64
 
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -11,18 +12,26 @@ def hash_password(password):
 def verify_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
+# Encode face as base64 image string
 def encode_face(image_file):
     image = Image.open(io.BytesIO(image_file.getvalue()))
-    img_array = np.array(image)
-    encodings = face_recognition.face_encodings(img_array)
-    return encodings[0].tobytes() if encodings else None
+    buffered = io.BytesIO()
+    image.save(buffered, format="JPEG")
+    return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-def verify_face(image_file, stored_encoding):
-    if not stored_encoding:
+def verify_face(image_file, stored_face_b64):
+    if not stored_face_b64:
         return False
-    image = Image.open(io.BytesIO(image_file.getvalue()))
-    img_array = np.array(image)
-    encodings = face_recognition.face_encodings(img_array)
-    if encodings:
-        return face_recognition.compare_faces([np.frombuffer(stored_encoding, dtype=np.float64)], encodings[0])[0]
-    return False
+    
+    # Convert stored encoding back to image
+    stored_bytes = base64.b64decode(stored_face_b64)
+    stored_image = Image.open(io.BytesIO(stored_bytes))
+
+    # Load new capture
+    live_image = Image.open(io.BytesIO(image_file.getvalue()))
+
+    try:
+        result = DeepFace.verify(np.array(live_image), np.array(stored_image), enforce_detection=False)
+        return result.get("verified", False)
+    except Exception:
+        return False
