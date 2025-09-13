@@ -1,6 +1,14 @@
+import sys, os
+sys.path.append(os.path.dirname(__file__))
+
 import streamlit as st
+
+try:
+    from auth import hash_password, verify_password, encode_face, verify_face
+except Exception as e:
+    st.error(f"Auth import failed: {e}")
+
 from db import init_db, get_user_by_username, add_user, add_exam, add_question, get_exams, get_questions, save_result
-from auth import hash_password, verify_password, encode_face, verify_face
 
 st.set_page_config(page_title="CBT System", layout="wide")
 

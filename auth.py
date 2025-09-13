@@ -12,7 +12,6 @@ def hash_password(password):
 def verify_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-# Encode face as base64 image string
 def encode_face(image_file):
     image = Image.open(io.BytesIO(image_file.getvalue()))
     buffered = io.BytesIO()
@@ -22,16 +21,12 @@ def encode_face(image_file):
 def verify_face(image_file, stored_face_b64):
     if not stored_face_b64:
         return False
-    
-    # Convert stored encoding back to image
-    stored_bytes = base64.b64decode(stored_face_b64)
-    stored_image = Image.open(io.BytesIO(stored_bytes))
-
-    # Load new capture
-    live_image = Image.open(io.BytesIO(image_file.getvalue()))
-
     try:
+        stored_bytes = base64.b64decode(stored_face_b64)
+        stored_image = Image.open(io.BytesIO(stored_bytes))
+        live_image = Image.open(io.BytesIO(image_file.getvalue()))
         result = DeepFace.verify(np.array(live_image), np.array(stored_image), enforce_detection=False)
         return result.get("verified", False)
-    except Exception:
+    except Exception as e:
+        st.error(f"DeepFace error: {e}")
         return False
