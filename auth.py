@@ -23,11 +23,9 @@ def verify_password(password: str, hashed: str) -> bool:
 # Face utilities
 # -------------------
 def encode_face(file):
-    """Convert uploaded/camera image into face embedding."""
     if not DEEPFACE_AVAILABLE:
         return None
     try:
-        # Convert UploadedFile (from st.camera_input) to numpy image
         image = Image.open(file)
         img_array = np.array(image)
 
@@ -43,11 +41,9 @@ def encode_face(file):
         return None
 
 def verify_face(file, stored_embedding):
-    """Compare uploaded/camera image with stored embedding."""
     if not DEEPFACE_AVAILABLE:
         return False
     try:
-        # Convert UploadedFile (from st.camera_input) to numpy image
         image = Image.open(file)
         img_array = np.array(image)
 
@@ -63,4 +59,3 @@ def verify_face(file, stored_embedding):
     except Exception as e:
         st.error(f"Face verification failed: {e}")
         return False
-        

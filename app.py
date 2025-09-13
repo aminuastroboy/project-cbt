@@ -77,14 +77,40 @@ elif choice == "Login":
                     if verify_password(password, pw_hash):
                         if stored_embedding and face_image:
                             if verify_face(face_image, stored_embedding):
-                                st.success("Login successful with face recognition!")
-                            else:
-                                st.error("Face does not match.")
+                                st.success("✅ Login successful with face recognition!")
+                                st.session_state["logged_in"] = True
+                                st.session_state["username"] = username
                         else:
-                            st.success("Login successful (no face check).")
+                            st.success("✅ Login successful (no face check).")
+                            st.session_state["logged_in"] = True
+                            st.session_state["username"] = username
                     else:
                         st.error("Invalid password.")
                 else:
                     st.error("User not found.")
             except Exception as e:
                 st.error(f"Error during login: {e}")
+
+# ----------------------------
+# Dashboard after login
+# ----------------------------
+if "logged_in" in st.session_state and st.session_state["logged_in"]:
+    st.header(f"👋 Welcome, {st.session_state['username']}!")
+    st.write("This is your CBT dashboard.")
+    st.write("👉 Here you can take practice tests, review results, etc.")
+
+    st.subheader("📝 Sample Quiz")
+    q1 = st.radio("1. What is 2 + 2?", ["3", "4", "5"], index=None)
+    q2 = st.radio("2. Capital of France?", ["Berlin", "Paris", "Madrid"], index=None)
+
+    if st.button("Submit Quiz"):
+        score = 0
+        if q1 == "4":
+            score += 1
+        if q2 == "Paris":
+            score += 1
+        st.success(f"🎉 You scored {score}/2")
+
+    if st.button("Logout"):
+        st.session_state.clear()
+        st.experimental_rerun()
