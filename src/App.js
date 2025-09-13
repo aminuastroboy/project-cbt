@@ -1,0 +1,1 @@
+import React from 'react';export default function App(){return(<div><h2>CBT React Biometric</h2><p>App works!</p></div>);}
